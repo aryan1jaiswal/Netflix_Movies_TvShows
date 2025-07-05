@@ -1,4 +1,4 @@
-![Netflix logo](https://github.com/aryan1jaiswal/Netflix_Movies_TvShows/blob/main/Netflix%20logo.jpg))
+![Netflix logo](https://github.com/aryan1jaiswal/Netflix_Movies_TvShows/blob/main/Netflix%20logo.jpg)
 
 # Netflix Movies & TvShows (SQL+Powerbi)
 
