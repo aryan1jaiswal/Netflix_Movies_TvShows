@@ -46,7 +46,125 @@ CREATE TABLE netflix (
 
 <details> <summary><strong>Click to expand SQL Code</strong></summary>
 
-###  For each country, calculate how many titles were released each year. Then identify countries where the number of titles released decreased from 2020 to 2021.
+### 1. For each type (Movie or TV Show), count the number of distinct genres across all titles. 
+
+```sql
+
+select type, COUNT(distinct genres)
+from (
+select type, TRIM(UNNEST(String_to_array(listed_in, ','))) as genres
+from netflix
+) abc
+GROUP BY type;
+```
+
+### 2. Group titles by the month they were added (from date_added). Which month (across all years) has the highest average number of uploads?
+
+```sql
+
+select month_added, 
+ROUND(COUNT(title)::numeric*100/ (select count(distinct title) from netflix)) as avg_uploads
+from (
+select *, DATE_TRUNC( 'Month', TO_DATE(date_added, 'Month DD, YYYY'))::date as month_added
+from netflix
+) abc
+where month_added is not null
+GROUP BY month_added
+Order by  avg_uploads desc;
+
+```
+
+### 3. Find directors who have only one title on Netflix and that title was added before 2018. Return director name and title
+
+```sql
+
+with cte as (
+select *, TRIM(UNNEST(STring_to_Array(director, ','))) as directors,
+EXTRACT('Year' from TO_date(date_added, 'Month DD, YYYY')) as year
+from netflix
+)
+
+select directors, count(distinct title) as title_cnt
+from cte
+where year <'2018'
+group by directors
+HAVING count(distinct title) = 1;
+```
+
+
+### 4. For each year, find the top 3 directors (by count of titles released). Return year, director, count, and their rank.
+
+```sql
+
+select *
+from (
+select *, Dense_Rank() Over (Partition BY year order by titles_cnt desc ) as rk
+from (
+select EXtract(Year from To_date(date_added, 'Month DD, YYYY')) as year,
+TRIM(UNNEST(STRING_TO_ARRAY(director, ','))) as director,
+COUNT(*) as titles_cnt
+from netflix
+GRoup by year, director
+) abc
+) abcd
+where rk <=3
+
+```
+
+### 5. For each director, compute: Total number of distinct genres across all their titles (listed_in), Total number of titles. Then, return top 10 directors by genre diversity.
+
+```sql
+
+select director1, count(distinct title) as title_cnt, count(distinct genres) as genre_cnt
+from (
+select director1, title, TRIM(UNNEST(String_to_array(listed_in, ','))) as genres
+from (
+select *, TRIM(UNNEST(String_to_array(director, ','))) as director1
+from netflix
+) abc
+where TRIM(director1) <> ''
+) abcd
+GROUP BY director1
+ORDER BY genre_cnt desc
+LIMIT 10;
+```
+
+### 6. Top 10 Actors Who Have Appeared in the Highest Number of Movies Produced in India
+
+```sql
+
+SELECT UNNEST(STRING_TO_ARRAY(casts, ',')) AS actor,
+COUNT(*) as cnt
+FROM netflix
+WHERE country = 'India'
+GROUP BY actor
+ORDER BY cnt DESC
+LIMIT 10;
+
+```
+
+
+### 7. Find actors who appeared in 5 or more titles across at least 3 different genres (based on listed_in). Return actor name, number of unique genres, and total title count.
+
+```sql
+
+with actor_data as (
+select *, TRIM(UNNEST(String_to_Array(casts, ','))) as actors
+from netflix
+), 
+genre_data as (
+select *, TRIM(UNNEST(String_to_Array(listed_in, ','))) as genres
+from actor_data 
+)
+
+select actors, COUNT(distinct title) as titles_cnt, COUNT(distinct genres) as genre_cnt
+from genre_data
+Group by actors
+HAVING COUNT(distinct genres) >= 3 and COUNT(distinct title) >= 5
+
+```
+
+###  8. For each country, calculate how many titles were released each year. Then identify countries where the number of titles released decreased from 2020 to 2021.
 
 ```sql
 
@@ -75,7 +193,7 @@ HAVING SUM(title_cnt1) > SUM(title_cnt2)
 
 ```
 
-### Find the Most Common Rating for Movies and TV Shows
+### 9. Find the Most Common Rating for Movies and TV Shows
 
 ```sql
 
@@ -119,78 +237,8 @@ limit 1
 ) 
 ```
 
-### Find each year and the average numbers of content release in India on Netflix.
 
-```sql
-
-
-with cte as (
-select *, UNNEST(String_TO_array(country, ',')) as country2
-from netflix )
-
-select  release_year, count(*) * 1.0/(SELECT COUNT(*) FROM cte WHERE country2 = 'India')
-from cte
-WHERE country2 = 'India'
-group by  release_year
-order by release_year;
-```
-
-### Top 10 Actors Who Have Appeared in the Highest Number of Movies Produced in India
-
-```sql
-
-SELECT UNNEST(STRING_TO_ARRAY(casts, ',')) AS actor,
-COUNT(*) as cnt
-FROM netflix
-WHERE country = 'India'
-GROUP BY actor
-ORDER BY cnt DESC
-LIMIT 10;
-
-```
-
-
-### For each year, find the top 3 directors (by count of titles released). Return year, director, count, and their rank.
-
-```sql
-
-select *
-from (
-select *, Dense_Rank() Over (Partition BY year order by titles_cnt desc ) as rk
-from (
-select EXtract(Year from To_date(date_added, 'Month DD, YYYY')) as year,
-TRIM(UNNEST(STRING_TO_ARRAY(director, ','))) as director,
-COUNT(*) as titles_cnt
-from netflix
-GRoup by year, director
-) abc
-) abcd
-where rk <=3
-
-```
-
-
-### Find actors who appeared in 5 or more titles across at least 3 different genres (based on listed_in). Return actor name, number of unique genres, and total title count.
-
-```sql
-
-with actor_data as (
-select *, TRIM(UNNEST(String_to_Array(casts, ','))) as actors
-from netflix
-), 
-genre_data as (
-select *, TRIM(UNNEST(String_to_Array(listed_in, ','))) as genres
-from actor_data 
-)
-
-select actors, COUNT(distinct title) as titles_cnt, COUNT(distinct genres) as genre_cnt
-from genre_data
-Group by actors
-HAVING COUNT(distinct genres) >= 3 and COUNT(distinct title) >= 5
-
-```
-
-### For each genre, calculate the total number of titles released per year. Then, identify genres where yearly output has increased every year since 2018.
+### 10. For each genre, calculate the total number of titles released per year. Then, identify genres where yearly output has increased every year since 2018.
 
 ```sql
 
@@ -224,7 +272,7 @@ where genres NOT IN
 
 ```
 
-### Find the country with the longest streak of consecutive years having at least one release. Return the country name and length of the streak.
+### 11. Find the country with the longest streak of consecutive years having at least one release. Return the country name and length of the streak.
 
 ```sql
 
@@ -255,24 +303,8 @@ limit 1;
 
 ```
 
-### Find directors who have only one title on Netflix and that title was added before 2018. Return director name and title
 
-```sql
-
-with cte as (
-select *, TRIM(UNNEST(STring_to_Array(director, ','))) as directors,
-EXTRACT('Year' from TO_date(date_added, 'Month DD, YYYY')) as year
-from netflix
-)
-
-select directors, count(distinct title) as title_cnt
-from cte
-where year <'2018'
-group by directors
-HAVING count(distinct title) = 1;
-```
-
-### For each title, calculate the number of days between release_year and date_added. Find the average lag per country, and list the top 5 countries with the longest average delay in uploading content.
+### 12. For each title, calculate the number of days between release_year and date_added. Find the average lag per country, and list the top 5 countries with the longest average delay in uploading content.
 
 ```sql
 
@@ -298,7 +330,7 @@ Limit 5;
 ```
 
 
-### From the listed_in column, extract pairs of genres (like "Action" & "Drama") that co-occur together in at least 50 titles. Return each pair and their count.
+### 13. From the listed_in column, extract pairs of genres (like "Action" & "Drama") that co-occur together in at least 50 titles. Return each pair and their count.
 
 ```sql
 
@@ -323,53 +355,8 @@ HAVING COUNT(distinct title) >= 50
 order by title_cnt;
 ```
 
-### For each type (Movie or TV Show), count the number of distinct genres across all titles. 
 
-```sql
-
-select type, COUNT(distinct genres)
-from (
-select type, TRIM(UNNEST(String_to_array(listed_in, ','))) as genres
-from netflix
-) abc
-GROUP BY type;
-```
-
-### Group titles by the month they were added (from date_added). Which month (across all years) has the highest average number of uploads?
-
-```sql
-
-select month_added, 
-ROUND(COUNT(title)::numeric*100/ (select count(distinct title) from netflix)) as avg_uploads
-from (
-select *, DATE_TRUNC( 'Month', TO_DATE(date_added, 'Month DD, YYYY'))::date as month_added
-from netflix
-) abc
-where month_added is not null
-GROUP BY month_added
-Order by  avg_uploads desc;
-
-```
-
-### For each director, compute: Total number of distinct genres across all their titles (listed_in), Total number of titles. Then, return top 10 directors by genre diversity.
-
-```sql
-
-select director1, count(distinct title) as title_cnt, count(distinct genres) as genre_cnt
-from (
-select director1, title, TRIM(UNNEST(String_to_array(listed_in, ','))) as genres
-from (
-select *, TRIM(UNNEST(String_to_array(director, ','))) as director1
-from netflix
-) abc
-where TRIM(director1) <> ''
-) abcd
-GROUP BY director1
-ORDER BY genre_cnt desc
-LIMIT 10;
-```
-
-### For each title, compute the delay in days between its release year and the date it was added.Then return the top 1% of titles with the longest delay.
+### 14. For each title, compute the delay in days between its release year and the date it was added.Then return the top 1% of titles with the longest delay.
 
 ```sql
 
@@ -398,7 +385,7 @@ Order by delay_time desc;
 
 ```
 
-### For each month in each year, calculate the number of uploads. Then identify months where: Uploads are at least twice the average monthly uploads of that year.
+### 15. For each month in each year, calculate the number of uploads. Then identify months where: Uploads are at least twice the average monthly uploads of that year.
 
 ```sql
 
