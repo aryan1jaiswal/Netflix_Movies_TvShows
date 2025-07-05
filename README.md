@@ -1,5 +1,8 @@
 # Netflix Movies & TvShows (SQL+Powerbi)
 
+![Netflix](Netflix logo.jpg)
+
+
 ## Overview
 
 This project contains advanced SQL analysis and PowerBi Report Analysis on the **Netflix dataset**, which includes the following Columns:
