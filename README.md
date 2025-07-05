@@ -1,8 +1,8 @@
 # Netflix Movies & TvShows (SQL+Powerbi)
 
-## 📝 Overview
+## Overview
 
-This project contains advanced SQL analysis and Powerbi Report Analysis on the **Netflix dataset**, which includes:
+This project contains advanced SQL analysis and PowerBi Report Analysis on the **Netflix dataset**, which includes:
 - show_id
 - type
 - title 
@@ -16,9 +16,16 @@ This project contains advanced SQL analysis and Powerbi Report Analysis on the *
 - listed_in (genres)
 - description
 
----
 
-## 🗂️ Schema
+## Objectives
+- Identify content trends and shifts in genres, release patterns, and director popularity across years.
+- Detect key actors, genres, and combinations that consistently co-occur or dominate viewership.
+- Analyze country-level performance and uncover geographic content patterns and lags in availability.
+- Measure content upload behavior over time (monthly & yearly) and find outlier months with spike uploads.
+- Determine genre diversity, director impact, and the delay between release and Netflix availability.
+
+
+## Schema
 
 ```sql
 CREATE TABLE netflix (
@@ -36,3 +43,6 @@ CREATE TABLE netflix (
     description  VARCHAR(550)
 );
 ```
+
+<details> <summary><strong>Click to expand SQL Code</strong></summary>
+
